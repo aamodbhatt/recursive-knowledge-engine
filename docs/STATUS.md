@@ -35,6 +35,7 @@
 - Health and stats endpoints (`/api/health`, `/api/stats`)
 - One-command startup script: `./start.sh`
 - GitHub packaging hardening: expanded `.gitignore` for secrets/runtime artifacts and tracked `.gitkeep` placeholders for required runtime folders
+- README rewritten for public release with full project narrative: problem, differentiation, pros/cons, architecture, setup, provider config, API, benchmarking, deployment, troubleshooting, and roadmap
 
 ## Known Bugs
 - Free-tier providers can still hit rate limits under burst traffic

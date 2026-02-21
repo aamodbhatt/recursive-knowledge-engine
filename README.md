@@ -1,142 +1,253 @@
 # Recursive Knowledge Engine
 
-Research-grade recursive RAG with a polished chat interface.
+A research-grade, installable retrieval-augmented generation (RAG) system that answers questions over your documents using a recursive self-refinement loop instead of one-shot retrieval.
 
-This project improves document QA quality by running a self-refining loop instead of a single retrieval pass:
+Core loop:
 
 `retrieve -> answer -> critique -> refine query -> retrieve`
 
-It is built to be practical for local use, reproducible for experiments, and deployable on free tiers.
+Built for two goals at once:
+- Practical daily use (clean chat UX, one-command startup, local indexing)
+- Research-style evaluation (ablation mode, calibration tracking, failure logging, robustness audit)
 
-## Why This Is Different
+---
 
-Most RAG apps stop after one retrieval + one answer. This engine adds deeper evaluation and control:
+## 1) What This Project Is
 
-- Recursive multi-pass retrieval (`1-3` passes)
-- Ablation mode (`1 vs 2 vs 3` passes side-by-side)
-- Confidence trajectory and calibration signals
-- Query evolution trace (token-level diffs per iteration)
-- Source coverage + groundedness checks
-- Robustness audit (challenge retrieval, contradiction-risk signals)
-- Failure case logging + JSON export for analysis
-- RLM feedback memory that reweights source quality over time
+Recursive Knowledge Engine is a full-stack RAG application with:
 
-## Feature Summary
+- A FastAPI backend for document ingestion, vector retrieval, recursive reasoning control, and evaluation metrics
+- A React + Tailwind frontend designed as a chat-first productivity workspace
+- Local FAISS indexing and persistence for free-tier friendliness and easy local usage
+- Provider-agnostic LLM integration via OpenAI-compatible chat completions
 
-### Retrieval + Answering
-- FAISS local vector index (disk persistence)
+It is not an "AI demo page". It is a controlled retrieval/reasoning system where you can inspect how answers were formed, how confidence changed per iteration, and when recursion helped or hurt.
+
+---
+
+## 2) What It Does
+
+### Document ingestion and indexing
+- Upload one or many files
+- Supports broad text-like formats (`pdf`, `docx`, `txt`, `md`, `csv`, `json`, `xml`, `html`, code files, logs, configs, etc.)
+- Chunks content and embeds with MiniLM
+- Stores vectors in FAISS (`vectorstore/`) and tracks chunk metadata
+
+### Query and recursive reasoning
+- Retrieves top-k chunks
+- Generates grounded answer
+- Critiques answer and refines retrieval query
+- Repeats for configurable depth (`1-3` passes)
+- Returns best answer + full iteration timeline
+
+### Transparency and quality controls
+- Confidence per iteration
+- Groundedness and unsupported-claim signals
+- Source coverage metric (answer-token overlap with retrieved evidence)
+- Early-stop behavior in fast mode
+- Robustness audit mode with challenge retrieval
+
+### Research tooling
+- Ablation mode: compare 1/2/3 pass outputs side-by-side
+- Query evolution visualization (token-level changes)
+- Failure case detection and export as JSON
+- RLM feedback memory to learn source reliability over time
+
+---
+
+## 3) Why It Is Different
+
+Most RAG projects stop after one retrieval and one answer. This project emphasizes *process observability* and *controlled recursion*.
+
+### Differentiators
+- Recursive retrieval with inspectable per-step outputs
+- Ablation built into the product UX (not external scripts only)
+- Calibration signals beyond a single "confidence" number
+- Failure logger for degradation analysis
+- Robustness audit (challenge evidence + source dependency)
+- Feedback-driven source bias memory (RLM)
+
+### In short
+Instead of asking only "What is the answer?", this system asks:
+- "How did the answer evolve?"
+- "Did extra passes actually help?"
+- "How grounded is this answer in retrieved evidence?"
+- "Can this result survive challenge retrieval?"
+
+---
+
+## 4) Key Features
+
+### Retrieval + indexing
+- FAISS local vector index with disk persistence
 - Sentence-transformers MiniLM embeddings
-- Hybrid retrieval fusion (dense + lexical)
-- Attachment-scoped retrieval (query only selected docs)
-- Broad text document support (`pdf`, `docx`, `txt`, `md`, `csv`, `json`, code/text formats)
+- Hybrid fusion retrieval (dense + lexical evidence)
+- Query embedding cache for repeated prompt speedups
+- Source alias handling for duplicate-content uploads
 
-### Research Controls
-- `fast_mode`: lower latency heuristic critique path
-- `deterministic_mode`: reproducible generation path
-- `answer_verbosity`: `short | normal | long`
-- `ablation_mode`: compare answer quality/latency across recursion depths
-- `challenge_mode`: reliability stress-check using challenge retrieval
+### Recursive controller
+- Configurable `max_iterations` (1-3)
+- Fast mode (`fast_mode`) for latency-sensitive use
+- Deterministic mode (`deterministic_mode`) for reproducibility
+- Early-stop policy under high confidence stability
 
-### UX
-- Chat-style UI with inline document chips
-- Multi-file attach + remove-before-send
-- Enter to send (`Shift+Enter` newline)
-- Visible tuning toggle in composer
-- Workspace tabs (`Ask + Tune`, `Research Stats`)
+### Research-grade evaluation
+- Ablation outputs (`ablation_mode`, `ablation_depths`)
+- Confidence trajectory + drop-point detection
+- Source coverage and low-coverage warnings
+- Groundedness and unsupported-claim ratio
+- Failure-case logging + export endpoint
 
-## Architecture
+### Robustness audit
+- Challenge retrieval query generation
+- Challenge risk score
+- Support redundancy metric
+- Single-source dependency metric
+- Reliability grade (`high`, `medium`, `low`)
+
+### Feedback loop (RLM)
+- Per-response thumbs up/down feedback
+- Source-level bias updates from user feedback
+- Stats for tracked source quality trends
+
+### Frontend UX
+- Chat-style centered workflow
+- Multi-doc attachments with per-file chips/icons
+- Remove file before send
+- Enter-to-send (`Shift+Enter` newline)
+- Bright `Tune` toggle near Send for discoverable controls
+- Tabs: `Ask + Tune` and `Research Stats`
+
+---
+
+## 5) Pros and Cons
+
+### Pros
+- Better retrieval quality than one-pass baselines on hard queries
+- Strong transparency: users can inspect every iteration
+- Research-friendly metrics and failure collection
+- Easy local install, free-tier deployability
+- Provider-agnostic LLM config (not locked to a single vendor)
+
+### Cons / Tradeoffs
+- More passes increase latency and token usage
+- Session/failure memory is in-memory by default (resets on restart)
+- PDF extraction quality depends on text layer quality
+- Free-tier models/providers may rate-limit under burst load
+- Deterministic mode can reduce exploratory richness
+
+---
+
+## 6) System Architecture
 
 ```text
-React + Vite Frontend
-  -> FastAPI Backend (/api)
-      -> Recursive Controller
-         -> Retriever (MiniLM + FAISS + cache)
-         -> Answerer (OpenAI-compatible provider)
-         -> Critic (LLM critic or fast heuristic)
-      -> Session history + failure store + RLM memory
+React + Vite + Tailwind Frontend
+  -> FastAPI (/api)
+      -> RecursiveController
+         -> Retriever (MiniLM embeddings + FAISS + cache)
+         -> Answerer (LLM, OpenAI-compatible)
+         -> Critic (LLM critic or heuristic fast path)
+      -> SessionHistoryStore
+      -> FailureCaseStore
+      -> RewardLearningMemory (RLM)
 ```
 
-## Project Structure
+---
+
+## 7) Repository Layout
 
 ```text
 recursive-knowledge-engine/
-├── app/                    # FastAPI backend + loop/controller/retrieval logic
-├── frontend/               # React + Tailwind UI
-├── scripts/                # Benchmark harness and utility scripts
-├── docs/                   # IMPLEMENTATION.md + STATUS.md
-├── data/uploads/           # Uploaded docs (ignored in git)
-├── vectorstore/            # FAISS index metadata (ignored in git)
-├── start.sh                # One-command local startup
+├── app/
+│   ├── main.py
+│   ├── api.py
+│   ├── controller.py
+│   ├── retriever.py
+│   ├── answerer.py
+│   ├── critic.py
+│   ├── rlm.py
+│   ├── schemas.py
+│   ├── config.py
+│   └── llm_provider.py
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   └── styles.css
+│   ├── package.json
+│   └── vite.config.js
+├── scripts/
+│   └── benchmark_harness.py
+├── docs/
+│   ├── IMPLEMENTATION.md
+│   └── STATUS.md
+├── data/uploads/          # git-ignored runtime files
+├── vectorstore/           # git-ignored runtime index
+├── start.sh
 ├── requirements.txt
 ├── .env.example
 └── .gitignore
 ```
 
-## Prerequisites
+---
+
+## 8) Prerequisites
 
 - Python `3.10+`
-- Node.js `18+` and npm
-- macOS/Linux shell (or equivalent on Windows with minor command adaptation)
+- Node.js `18+`
+- npm
 
-## Quickstart (Local, One Command)
+---
 
-1. Clone repo
-2. Create env file (or let script create it):
+## 9) Local Setup (One Command)
 
 ```bash
 cp .env.example .env
-```
-
-3. Set your key in `.env` (minimum required):
-
-```env
-LLM_API_KEY=your_key_here
-```
-
-4. Run:
-
-```bash
+# Edit .env and set at least LLM_API_KEY
 ./start.sh
 ```
 
-5. Open:
+Open:
 - App: `http://127.0.0.1:8000`
-- API docs: `http://127.0.0.1:8000/docs`
+- OpenAPI docs: `http://127.0.0.1:8000/docs`
 
-`start.sh` will:
-- bootstrap `.venv` if missing
-- install backend/frontend dependencies
-- build frontend
-- start FastAPI that serves the built UI
+`start.sh` handles:
+- venv creation
+- backend deps install
+- frontend deps install
+- frontend production build
+- FastAPI startup
 
-## LLM Provider Configuration (Any OpenAI-Compatible API Key)
+---
 
-The app supports provider-agnostic configuration through `LLM_*` env vars.
+## 10) LLM Configuration (Any OpenAI-Compatible API Key)
 
-### Core env vars
+The backend uses provider-agnostic env vars:
+
 - `LLM_PROVIDER=auto|openrouter|openai|groq|custom`
-- `LLM_API_KEY=<your key>`
-- `LLM_MODEL=<optional model id>`
-- `LLM_BASE_URL=<optional full chat completions URL>`
-- `LLM_FALLBACK_MODELS=<optional comma-separated models>`
+- `LLM_API_KEY=...`
+- `LLM_MODEL=...` (optional)
+- `LLM_BASE_URL=...` (optional, required for many custom providers)
+- `LLM_FALLBACK_MODELS=...` (optional comma-separated)
+- `LLM_TIMEOUT_SECONDS=45`
+- `LLM_MAX_RETRIES=2`
 
-Legacy `OPENROUTER_*` vars are still supported for backward compatibility.
+Legacy compatibility remains:
+- `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, etc. still work
 
-### Auto defaults (if `LLM_MODEL` is blank)
-- `openrouter` -> `openrouter/free`
-- `openai` -> `gpt-4o-mini`
-- `groq` -> `llama-3.1-8b-instant`
+### Auto defaults (if `LLM_MODEL` is empty)
+- `openrouter`: `openrouter/free`
+- `openai`: `gpt-4o-mini`
+- `groq`: `llama-3.1-8b-instant`
 
-### Example configs
-
-OpenRouter:
+### Example: OpenRouter
 ```env
 LLM_PROVIDER=openrouter
 LLM_API_KEY=sk-or-...
 LLM_MODEL=openrouter/free
 ```
 
-OpenAI:
+### Example: OpenAI
 ```env
 LLM_PROVIDER=openai
 LLM_API_KEY=sk-...
@@ -144,7 +255,7 @@ LLM_MODEL=gpt-4o-mini
 LLM_BASE_URL=https://api.openai.com/v1/chat/completions
 ```
 
-Groq:
+### Example: Groq
 ```env
 LLM_PROVIDER=groq
 LLM_API_KEY=gsk_...
@@ -152,28 +263,27 @@ LLM_MODEL=llama-3.3-70b-versatile
 LLM_BASE_URL=https://api.groq.com/openai/v1/chat/completions
 ```
 
-Custom OpenAI-compatible endpoint:
+### Example: Custom OpenAI-compatible endpoint
 ```env
 LLM_PROVIDER=custom
-LLM_API_KEY=<provider_key>
+LLM_API_KEY=<your_key>
 LLM_MODEL=<model_name>
-LLM_BASE_URL=https://<host>/v1/chat/completions
+LLM_BASE_URL=https://<provider-host>/v1/chat/completions
 ```
 
-## How To Use The App
+---
 
-1. Attach one or more docs from the paperclip in the composer.
-2. Wait for each attachment to show indexed/ready.
-3. Ask your question and send.
-4. Use `Tune` button (next to Send) to open advanced controls.
-5. Inspect:
-- Confidence timeline
-- Query evolution
-- Retrieved sources
-- Robustness audit
-- Failure logs and export
+## 11) How To Use
 
-## API Endpoints
+1. Attach one or more documents using the paperclip
+2. Ensure chips show indexed/ready status
+3. Ask a question and press Enter
+4. Use `Tune` button next to Send for advanced controls
+5. Inspect `Research Stats` for coverage, evolution, failures, robustness
+
+---
+
+## 12) API Endpoints
 
 - `GET /api/health`
 - `GET /api/stats`
@@ -187,14 +297,14 @@ LLM_BASE_URL=https://<host>/v1/chat/completions
 - `GET /api/failures/export`
 - `POST /api/index/clear`
 
-### Sample query request
+### Query example
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/api/query" \
   -H "Content-Type: application/json" \
   -d '{
-        "question": "Summarize key findings with caveats.",
-        "session_id": "demo-session",
+        "question": "Summarize key findings and caveats.",
+        "session_id": "demo",
         "top_k": 6,
         "max_iterations": 3,
         "fast_mode": false,
@@ -206,9 +316,11 @@ curl -X POST "http://127.0.0.1:8000/api/query" \
       }'
 ```
 
-## Benchmark / Hard Testing
+---
 
-Use the harness to evaluate behavior over larger sets:
+## 13) Benchmarking / Hard Testing
+
+Run the benchmark harness on many docs/queries:
 
 ```bash
 python scripts/benchmark_harness.py \
@@ -221,60 +333,87 @@ python scripts/benchmark_harness.py \
   --deterministic-mode
 ```
 
-`eval_queries.jsonl` example:
+`eval_queries.jsonl` sample:
+
 ```json
 {"question":"What is the main claim?","expected_keywords":["claim","result"]}
-{"question":"List key limitations.","expected_keywords":["limitation","risk"]}
+{"question":"List major limitations.","expected_keywords":["limitation","risk"]}
 ```
 
-## Deployment (Free-Tier Friendly)
+---
 
-### Backend on Render
-1. Create Render Web Service from repo
+## 14) Deployment
+
+### Backend: Render (free tier)
+1. Connect repo to Render
 2. Build command: `pip install -r requirements.txt`
 3. Start command: `uvicorn app.main:app --host 0.0.0.0 --port 10000`
 4. Add env vars from `.env.example`
 
-### Frontend on Cloudflare Pages
-1. Set `VITE_API_BASE_URL=https://<your-render-backend>/api`
+### Frontend: Cloudflare Pages (free tier)
+1. Set `VITE_API_BASE_URL=https://<render-backend>/api`
 2. Build command: `npm run build`
 3. Output directory: `frontend/dist`
 
-## GitHub Readiness
+---
 
-This repo is configured to avoid committing sensitive/local runtime data:
+## 15) Security and Privacy Notes
 
-- `.env` and secret env files are ignored
-- Uploaded docs in `data/uploads/` are ignored
-- Generated FAISS index in `vectorstore/` is ignored
-- `node_modules`, build output, caches, logs are ignored
+- `.env` and secret env files are git-ignored
+- Uploaded user docs are git-ignored (`data/uploads/`)
+- Generated vector index is git-ignored (`vectorstore/`)
+- Local runtime data is not automatically encrypted at rest
+- For production, add auth + access control before multi-user exposure
 
-Tracked placeholders are kept via:
-- `data/uploads/.gitkeep`
-- `vectorstore/.gitkeep`
+---
 
-## Troubleshooting
+## 16) Current Limitations
+
+- In-memory session/failure stores reset on backend restart
+- No built-in auth layer yet
+- No distributed job queue for large-scale ingestion
+- No persistent DB for long-term analytics by default
+
+---
+
+## 17) Roadmap Ideas
+
+- Redis/Postgres-backed persistent session/failure stores
+- Streaming token responses
+- Citation-level inline grounding links
+- Async ingestion pipeline for very large corpora
+- CI benchmark regression gating
+
+---
+
+## 18) Troubleshooting
 
 ### "Using a local fallback summary because the LLM provider is unavailable"
-- Check `LLM_API_KEY` in `.env`
-- If using non-default provider, set `LLM_PROVIDER`, `LLM_MODEL`, and `LLM_BASE_URL`
-- Restart backend after env changes
+- Verify `LLM_API_KEY`
+- Verify provider-specific `LLM_MODEL` / `LLM_BASE_URL`
+- Restart server after changing `.env`
 
-### Empty or weak answers
+### Weak answers
 - Increase `top_k`
+- Use `2-3` passes
 - Disable `fast_mode` for full critic path
-- Use `2` or `3` passes
-- Ensure relevant documents are attached/in scope
+- Ensure relevant docs are attached/scoped
 
-### First query is slower
-- Expected on cold start while embedding model and provider path warm up
+### Slow first request
+- Expected on cold start (embedding + provider warmup)
 
-## Limitations
+---
 
-- Session history/failure memory are in-memory (reset on restart)
-- PDF extraction quality depends on the source text layer
-- Free-tier providers can rate limit under burst traffic
+## 19) GitHub-Ready Notes
 
-## License
+This repo is prepared for open-source publishing:
+
+- Runtime and sensitive files are ignored in `.gitignore`
+- Runtime folders are preserved via `.gitkeep` placeholders
+- README includes setup, architecture, usage, deployment, and limitations
+
+---
+
+## 20) License
 
 MIT (recommended)
