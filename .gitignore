@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Virtual environments
+.venv/
+venv/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data (do not commit personal docs or generated indices)
+vectorstore/*
+!vectorstore/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Frontend artifacts
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.frontend.sha256
+
+# Logs / local runtime
+*.log
+*.pid
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
