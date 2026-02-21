@@ -36,6 +36,7 @@
 - One-command startup script: `./start.sh`
 - GitHub packaging hardening: expanded `.gitignore` for secrets/runtime artifacts and tracked `.gitkeep` placeholders for required runtime folders
 - README rewritten for public release with full project narrative: problem, differentiation, pros/cons, architecture, setup, provider config, API, benchmarking, deployment, troubleshooting, and roadmap
+- README onboarding flow improved: local setup moved to the top immediately after intro for faster first-run success
 
 ## Known Bugs
 - Free-tier providers can still hit rate limits under burst traffic

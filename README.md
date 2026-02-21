@@ -12,6 +12,27 @@ Built for two goals at once:
 
 ---
 
+## Quick Local Setup (One Command)
+
+```bash
+cp .env.example .env
+# Edit .env and set at least LLM_API_KEY
+./start.sh
+```
+
+Open:
+- App: `http://127.0.0.1:8000`
+- OpenAPI docs: `http://127.0.0.1:8000/docs`
+
+`start.sh` handles:
+- venv creation
+- backend deps install
+- frontend deps install
+- frontend production build
+- FastAPI startup
+
+---
+
 ## 1) What This Project Is
 
 Recursive Knowledge Engine is a full-stack RAG application with:
@@ -199,28 +220,7 @@ recursive-knowledge-engine/
 
 ---
 
-## 9) Local Setup (One Command)
-
-```bash
-cp .env.example .env
-# Edit .env and set at least LLM_API_KEY
-./start.sh
-```
-
-Open:
-- App: `http://127.0.0.1:8000`
-- OpenAPI docs: `http://127.0.0.1:8000/docs`
-
-`start.sh` handles:
-- venv creation
-- backend deps install
-- frontend deps install
-- frontend production build
-- FastAPI startup
-
----
-
-## 10) LLM Configuration (Any OpenAI-Compatible API Key)
+## 9) LLM Configuration (Any OpenAI-Compatible API Key)
 
 The backend uses provider-agnostic env vars:
 
@@ -273,7 +273,7 @@ LLM_BASE_URL=https://<provider-host>/v1/chat/completions
 
 ---
 
-## 11) How To Use
+## 10) How To Use
 
 1. Attach one or more documents using the paperclip
 2. Ensure chips show indexed/ready status
@@ -283,7 +283,7 @@ LLM_BASE_URL=https://<provider-host>/v1/chat/completions
 
 ---
 
-## 12) API Endpoints
+## 11) API Endpoints
 
 - `GET /api/health`
 - `GET /api/stats`
@@ -318,7 +318,7 @@ curl -X POST "http://127.0.0.1:8000/api/query" \
 
 ---
 
-## 13) Benchmarking / Hard Testing
+## 12) Benchmarking / Hard Testing
 
 Run the benchmark harness on many docs/queries:
 
@@ -342,7 +342,7 @@ python scripts/benchmark_harness.py \
 
 ---
 
-## 14) Deployment
+## 13) Deployment
 
 ### Backend: Render (free tier)
 1. Connect repo to Render
@@ -357,7 +357,7 @@ python scripts/benchmark_harness.py \
 
 ---
 
-## 15) Security and Privacy Notes
+## 14) Security and Privacy Notes
 
 - `.env` and secret env files are git-ignored
 - Uploaded user docs are git-ignored (`data/uploads/`)
@@ -367,7 +367,7 @@ python scripts/benchmark_harness.py \
 
 ---
 
-## 16) Current Limitations
+## 15) Current Limitations
 
 - In-memory session/failure stores reset on backend restart
 - No built-in auth layer yet
@@ -376,7 +376,7 @@ python scripts/benchmark_harness.py \
 
 ---
 
-## 17) Roadmap Ideas
+## 16) Roadmap Ideas
 
 - Redis/Postgres-backed persistent session/failure stores
 - Streaming token responses
@@ -386,7 +386,7 @@ python scripts/benchmark_harness.py \
 
 ---
 
-## 18) Troubleshooting
+## 17) Troubleshooting
 
 ### "Using a local fallback summary because the LLM provider is unavailable"
 - Verify `LLM_API_KEY`
@@ -404,7 +404,7 @@ python scripts/benchmark_harness.py \
 
 ---
 
-## 19) GitHub-Ready Notes
+## 18) GitHub-Ready Notes
 
 This repo is prepared for open-source publishing:
 
@@ -414,6 +414,6 @@ This repo is prepared for open-source publishing:
 
 ---
 
-## 20) License
+## 19) License
 
 MIT (recommended)
