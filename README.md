@@ -14,9 +14,33 @@ Built for two goals at once:
 
 ## Quick Local Setup (One Command)
 
+### Step A: Get an API key (OpenRouter free path recommended)
+
+1. Create/sign in to an OpenRouter account: [https://openrouter.ai/](https://openrouter.ai/)
+2. Generate an API key from: [https://openrouter.ai/keys](https://openrouter.ai/keys)
+3. Use a free model route (for example `openrouter/free`) for local testing
+
+Note:
+- OpenRouter has free routes but they can rate-limit during peak usage.
+- If free routes are busy, keep the same key and switch to another available model.
+
+### Step B: Configure environment
+
 ```bash
 cp .env.example .env
-# Edit .env and set at least LLM_API_KEY
+```
+
+Edit `.env` with at least:
+
+```env
+LLM_PROVIDER=openrouter
+LLM_API_KEY=sk-or-...your_key...
+LLM_MODEL=openrouter/free
+```
+
+### Step C: Start the app
+
+```bash
 ./start.sh
 ```
 
@@ -30,6 +54,15 @@ Open:
 - frontend deps install
 - frontend production build
 - FastAPI startup
+
+### Alternative key providers
+
+You can use any OpenAI-compatible API key/provider:
+
+- OpenAI keys: [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- Groq keys: [https://console.groq.com/keys](https://console.groq.com/keys)
+
+Then set `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, and optionally `LLM_BASE_URL` in `.env`.
 
 ---
 
